@@ -1,18 +1,19 @@
 import os
 import streamlit as st
 from dotenv import load_dotenv
-from transformers import AutoTokenizer, AutoModelForCausalLM
+import requests
 
 # Load environment variables from .env file
 load_dotenv()
 
 # Set your Hugging Face API token
 api_token = os.getenv("HUGGINGFACEHUB_API_TOKEN")
+API_URL = "https://api-inference.huggingface.co/models/EleutherAI/gpt-neox-20b"
+headers = {"Authorization": f"Bearer {api_token}"}
 
-# Load the model and tokenizer
-model_name = "EleutherAI/gpt-neox-20b"
-tokenizer = AutoTokenizer.from_pretrained(model_name, use_auth_token=api_token)
-model = AutoModelForCausalLM.from_pretrained(model_name, use_auth_token=api_token)
+def query(payload):
+    response = requests.post(API_URL, headers=headers, json=payload)
+    return response.json()
 
 # Streamlit app layout
 st.title("GPT-NeoX-20B Text Generation")
@@ -27,7 +28,12 @@ prompt = st.text_area("Prompt", "Once upon a time...")
 max_length = st.slider("Max Length", 10, 100, 50)
 
 if st.button("Generate"):
-    inputs = tokenizer(prompt, return_tensors="pt")
-    outputs = model.generate(**inputs, max_length=max_length)
-    generated_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    st.write(generated_text)
+    try:
+        output = query({
+            "inputs": prompt,
+            "parameters": {"max_length": max_length}
+        })
+        generated_text = output.get("generated_text", "No output generated.")
+        st.write(generated_text)
+    except Exception as e:
+        st.error(f"Error generating text: {e}")
