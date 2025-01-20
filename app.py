@@ -33,7 +33,13 @@ if st.button("Generate"):
             "inputs": prompt,
             "parameters": {"max_length": max_length}
         })
-        generated_text = output.get("generated_text", "No output generated.")
+        
+        # Check if the output is a list and handle accordingly
+        if isinstance(output, list) and len(output) > 0:
+            generated_text = output[0].get("generated_text", "No output generated.")
+        else:
+            generated_text = "No output generated."
+        
         st.write(generated_text)
     except Exception as e:
         st.error(f"Error generating text: {e}")
